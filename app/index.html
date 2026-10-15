@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Your PDF</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type="file"],
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
+        #answerBox {
+            display: none;
+            margin-top: 25px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-left: 4px solid #007bff;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        #status {
+            margin-top: 15px;
+            color: #555;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Ask Your PDF</h2>
+
+        <form id="pdfForm">
+            <label for="fileUpload">Upload PDF</label>
+            <input
+                type="file"
+                id="fileUpload"
+                name="fileUpload"
+                accept=".pdf,application/pdf"
+                required
+            >
+
+            <label for="question">Enter your question</label>
+            <textarea
+                id="question"
+                name="question"
+                placeholder="Ask something about your PDF..."
+                required
+            ></textarea>
+
+            <button type="submit" id="submitBtn">
+                Get Answer
+            </button>
+        </form>
+
+        <p id="status"></p>
+
+        <div id="answerBox">
+            <strong>Answer:</strong>
+            <p id="answer"></p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById("pdfForm");
+        const status = document.getElementById("status");
+        const answerBox = document.getElementById("answerBox");
+        const answer = document.getElementById("answer");
+        const submitBtn = document.getElementById("submitBtn");
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const file = document.getElementById("fileUpload").files[0];
+            const question = document.getElementById("question").value.trim();
+
+            if (!file || !question) {
+                status.textContent = "Please upload a PDF and enter a question.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("fileUpload", file);
+            formData.append("question", question);
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Processing...";
+            status.textContent = "Getting answer from the AI...";
+            answerBox.style.display = "none";
+
+            try {
+                const response = await fetch(
+                    "http://127.0.0.1:8000/ask-pdf",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    console.log(data)
+                    throw new Error(
+                        data.detail || "Failed to get an answer."
+                    );
+                }
+
+                answer.textContent = data;
+                answerBox.style.display = "block";
+                status.textContent = "Answer received successfully!";
+                console.log(data)
+
+            } catch (error) {
+                status.textContent = "Error: " + error.message;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Get Answer";
+            }
+        });
+    </script>
+</body>
+</html>
